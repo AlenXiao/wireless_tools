@@ -102,9 +102,8 @@ ifdef BUILD_WE_ESSENTIAL
 endif
 
 # Other flags
-CFLAGS=-Os -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow \
-	-Wpointer-arith -Wcast-qual -Winline -I.
-#CFLAGS=-O2 -W -Wall -Wstrict-prototypes -I.
+#CFLAGS=-Os -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-qual -Winline -I.
+CFLAGS=-O2 -W -Wall -Wstrict-prototypes -I.
 DEPFLAGS=-MMD
 XCFLAGS=$(CFLAGS) $(DEPFLAGS) $(WARN) $(HEADERS) $(WELIB_FLAG) $(WEDEF_FLAG)
 PICFLAG=-fPIC
@@ -150,7 +149,7 @@ $(DYNAMIC): $(OBJS:.o=.so)
 # Compilation of the static library
 $(STATIC): $(OBJS:.o=.so)
 	$(RM) $@
-	$(AR) cru $@ $^
+	$(AR) cr $@ $^
 	$(RANLIB) $@
 
 # Installation : So crude but so effective ;-)

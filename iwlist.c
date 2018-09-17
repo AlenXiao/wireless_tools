@@ -648,6 +648,7 @@ static int print_scanning_info(
     }
 
     /* Check if we have scan options */
+#if 0
     if (scanflags) {
         wrq.u.data.pointer = (caddr_t) &scanopt;
         wrq.u.data.length = sizeof(scanopt);
@@ -657,6 +658,18 @@ static int print_scanning_info(
         wrq.u.data.flags = 0;
         wrq.u.data.length = 0;
     }
+#else
+    if (scanflags == 0) {
+        scanflags |= IW_SCAN_ALL_FREQ;
+        scanopt.scan_type = IW_SCAN_TYPE_PASSIVE;
+        scanopt.num_channels = range.num_channels;
+        printf("scanopt.num_channels:%d\n", scanopt.num_channels);
+        memcpy(scanopt.channel_list, range.freq, sizeof(range.freq[0]) * range.num_channels); 
+    }
+    wrq.u.data.pointer = (caddr_t) &scanopt;
+    wrq.u.data.length = sizeof(scanopt);
+    wrq.u.data.flags = scanflags;
+#endif
 
     /* If only 'last' was specified on command line, don't trigger a scan */
     if (scanflags == IW_SCAN_HACK) {
@@ -807,18 +820,16 @@ realloc:
 /*
  * Print the number of channels and available frequency for the device
  */
-static int
-print_freq_info(int		skfd,
-		char *		ifname,
-		char *		args[],		/* Command line args */
-		int		count)		/* Args count */
+static int print_freq_info(int skfd, char *ifname,
+                           char *args[],       /* Command line args */
+		                   int count)      /* Args count */
 {
-  struct iwreq		wrq;
-  struct iw_range	range;
-  double		freq;
-  int			k;
-  int			channel;
-  char			buffer[128];	/* Temporary buffer */
+  struct iwreq wrq;
+  struct iw_range range;
+  double freq;
+  int k;
+  int channel;
+  char buffer[128];	/* Temporary buffer */
 
   /* Avoid "Unused parameter" warning */
   args = args; count = count;
@@ -1843,6 +1854,7 @@ static inline const iwlist_cmd *find_command(const char *	cmd)
     /* Go through all commands */
     for (i = 0; iwlist_cmds[i].cmd != NULL; ++ i) {
         /* No match -> next one */
+        printf("idx:  %d,\t\tcmd:%s,\tfn:%p\n", i, iwlist_cmds[i].cmd, iwlist_cmds[i].fn);
         if (strncasecmp(iwlist_cmds[i].cmd, cmd, len) != 0)
             continue;
 
@@ -1851,11 +1863,13 @@ static inline const iwlist_cmd *find_command(const char *	cmd)
             return &iwlist_cmds[i];
 
         /* Partial match */
-        if (found == NULL) /* First time */
+        if (found == NULL) {  /* First time */
+            printf("found cmp\n");
             found = &iwlist_cmds[i];
-        else /* Another time */
+        } else {  /* Another time */
             if (iwlist_cmds[i].fn != found->fn)
                 ambig = 1;
+        }
     }
 
     if (found == NULL) {

@@ -468,13 +468,11 @@ iw_print_version_info(const char *	toolname)
 /*
  * Get the range information out of the driver
  */
-int iw_get_range_info(int skfd,
-                      const char *ifname,
-                      iwrange *range)
+int iw_get_range_info(int skfd, const char *ifname, iwrange *range)
 {
-  struct iwreq		wrq;
-  char			buffer[sizeof(iwrange) * 2];	/* Large enough */
-  union iw_range_raw *	range_raw;
+  struct iwreq wrq;
+  char buffer[sizeof(iwrange) * 2];	/* Large enough */
+  union iw_range_raw *range_raw;
   int ret = -1;
 
   /* Cleanup */
@@ -496,92 +494,73 @@ int iw_get_range_info(int skfd,
 
   /* For new versions, we can check the version directly, for old versions
    * we use magic. 300 bytes is a also magic number, don't touch... */
-  if(wrq.u.data.length < 300)
-    {
+  if (wrq.u.data.length < 300) {
       /* That's v10 or earlier. Ouch ! Let's make a guess...*/
       range_raw->range.we_version_compiled = 9;
-    }
+  }
 
   /* Check how it needs to be processed */
-  if(range_raw->range.we_version_compiled > 15)
-    {
+  if (range_raw->range.we_version_compiled > 15) {
       /* This is our native format, that's easy... */
       /* Copy stuff at the right place, ignore extra */
       memcpy((char *) range, buffer, sizeof(iwrange));
-    }
-  else
-    {
+  } else {
       /* Zero unknown fields */
       bzero((char *) range, sizeof(struct iw_range));
 
       /* Initial part unmoved */
-      memcpy((char *) range,
-	     buffer,
-	     iwr15_off(num_channels));
+      memcpy((char *) range, buffer, iwr15_off(num_channels));
       /* Frequencies pushed futher down towards the end */
-      memcpy((char *) range + iwr_off(num_channels),
-	     buffer + iwr15_off(num_channels),
+      memcpy((char *) range + iwr_off(num_channels), buffer + iwr15_off(num_channels),
 	     iwr15_off(sensitivity) - iwr15_off(num_channels));
       /* This one moved up */
-      memcpy((char *) range + iwr_off(sensitivity),
-	     buffer + iwr15_off(sensitivity),
+      memcpy((char *) range + iwr_off(sensitivity), buffer + iwr15_off(sensitivity),
 	     iwr15_off(num_bitrates) - iwr15_off(sensitivity));
       /* This one goes after avg_qual */
-      memcpy((char *) range + iwr_off(num_bitrates),
-	     buffer + iwr15_off(num_bitrates),
+      memcpy((char *) range + iwr_off(num_bitrates), buffer + iwr15_off(num_bitrates),
 	     iwr15_off(min_rts) - iwr15_off(num_bitrates));
       /* Number of bitrates has changed, put it after */
-      memcpy((char *) range + iwr_off(min_rts),
-	     buffer + iwr15_off(min_rts),
+      memcpy((char *) range + iwr_off(min_rts), buffer + iwr15_off(min_rts),
 	     iwr15_off(txpower_capa) - iwr15_off(min_rts));
       /* Added encoding_login_index, put it after */
-      memcpy((char *) range + iwr_off(txpower_capa),
-	     buffer + iwr15_off(txpower_capa),
+      memcpy((char *) range + iwr_off(txpower_capa), buffer + iwr15_off(txpower_capa),
 	     iwr15_off(txpower) - iwr15_off(txpower_capa));
       /* Hum... That's an unexpected glitch. Bummer. */
-      memcpy((char *) range + iwr_off(txpower),
-	     buffer + iwr15_off(txpower),
+      memcpy((char *) range + iwr_off(txpower), buffer + iwr15_off(txpower),
 	     iwr15_off(avg_qual) - iwr15_off(txpower));
       /* Avg qual moved up next to max_qual */
-      memcpy((char *) range + iwr_off(avg_qual),
-	     buffer + iwr15_off(avg_qual),
-	     sizeof(struct iw_quality));
+      memcpy((char *) range + iwr_off(avg_qual), buffer + iwr15_off(avg_qual), sizeof(struct iw_quality));
     }
 
   /* We are now checking much less than we used to do, because we can
    * accomodate more WE version. But, there are still cases where things
    * will break... */
-  if(!iw_ignore_version)
-    {
+  if (!iw_ignore_version) {
       /* We don't like very old version (unfortunately kernel 2.2.X) */
-      if(range->we_version_compiled <= 10)
-	{
-	  fprintf(stderr, "Warning: Driver for device %s has been compiled with an ancient version\n", ifname);
-	  fprintf(stderr, "of Wireless Extension, while this program support version 11 and later.\n");
-	  fprintf(stderr, "Some things may be broken...\n\n");
-	}
+      if (range->we_version_compiled <= 10) {
+	      fprintf(stderr, "Warning: Driver for device %s has been compiled with an ancient version\n", ifname);
+          fprintf(stderr, "of Wireless Extension, while this program support version 11 and later.\n");
+          fprintf(stderr, "Some things may be broken...\n\n");
+      }
 
       /* We don't like future versions of WE, because we can't cope with
        * the unknown */
-      if(range->we_version_compiled > WE_MAX_VERSION)
-	{
-	  fprintf(stderr, "Warning: Driver for device %s has been compiled with version %d\n", ifname, range->we_version_compiled);
-	  fprintf(stderr, "of Wireless Extension, while this program supports up to version %d.\n", WE_MAX_VERSION);
-	  fprintf(stderr, "Some things may be broken...\n\n");
-	}
+      if (range->we_version_compiled > WE_MAX_VERSION) {
+          fprintf(stderr, "Warning: Driver for device %s has been compiled with version %d\n", ifname, range->we_version_compiled);
+          fprintf(stderr, "of Wireless Extension, while this program supports up to version %d.\n", WE_MAX_VERSION);
+          fprintf(stderr, "Some things may be broken...\n\n");
+      }
 
       /* Driver version verification */
-      if((range->we_version_compiled > 10) &&
-	 (range->we_version_compiled < range->we_version_source))
-	{
-	  fprintf(stderr, "Warning: Driver for device %s recommend version %d of Wireless Extension,\n", ifname, range->we_version_source);
-	  fprintf(stderr, "but has been compiled with version %d, therefore some driver features\n", range->we_version_compiled);
-	  fprintf(stderr, "may not be available...\n\n");
-	}
+      if ((range->we_version_compiled > 10) && (range->we_version_compiled < range->we_version_source)) {
+          fprintf(stderr, "Warning: Driver for device %s recommend version %d of Wireless Extension,\n", ifname, range->we_version_source);
+          fprintf(stderr, "but has been compiled with version %d, therefore some driver features\n", range->we_version_compiled);
+          fprintf(stderr, "may not be available...\n\n");
+      }
       /* Note : we are only trying to catch compile difference, not source.
        * If the driver source has not been updated to the latest, it doesn't
        * matter because the new fields are set to zero */
-    }
+  }
 
   /* Don't complain twice.
    * In theory, the test apply to each individual driver, but usually
@@ -591,10 +570,10 @@ int iw_get_range_info(int skfd,
   return(0);
 }
 
-int iw_get_ext(int			skfd,		/* Socket to the kernel */
-	   const char *		ifname,		/* Device name */
-	   int			request,	/* WE ID */
-	   struct iwreq *	pwrq)		/* Fixed part of the request */
+int iw_get_ext(int skfd,     /* Socket to the kernel */
+	   const char * ifname,  /* Device name */
+	   int request,	         /* WE ID */
+	   struct iwreq *pwrq)   /* Fixed part of the request */
 {
   /* Set device name */
   strncpy(pwrq->ifr_name, ifname, IFNAMSIZ);
@@ -602,10 +581,10 @@ int iw_get_ext(int			skfd,		/* Socket to the kernel */
   return(ioctl(skfd, request, pwrq));
 }
 
-int iw_set_ext(int			skfd,		/* Socket to the kernel */
-	   const char *		ifname,		/* Device name */
-	   int			request,	/* WE ID */
-	   struct iwreq *	pwrq)		/* Fixed part of the request */
+int iw_set_ext(int skfd,        /* Socket to the kernel */
+	   const char * ifname,     /* Device name */
+	   int request,             /* WE ID */
+	   struct iwreq *pwrq)      /* Fixed part of the request */
 {
   /* Set device name */
   strncpy(pwrq->ifr_name, ifname, IFNAMSIZ);
@@ -620,10 +599,7 @@ int iw_set_ext(int			skfd,		/* Socket to the kernel */
  * Note : there is one danger using this function. If it return 0, you
  * still need to free() the buffer. Beware.
  */
-int
-iw_get_priv_info(int		skfd,
-		 const char *	ifname,
-		 iwprivargs **	ppriv)
+int iw_get_priv_info(int skfd, const char *ifname, iwprivargs **ppriv)
 {
   struct iwreq		wrq;
   iwprivargs *		priv = NULL;	/* Not allocated yet */

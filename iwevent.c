@@ -89,7 +89,7 @@ static inline int rtnl_open(struct rtnl_handle *rth, unsigned subscriptions)
 {
 	int addr_len;
 
-	memset(rth, 0, sizeof(rth));
+	memset(rth, 0, sizeof(*rth));
 
 	rth->fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 	if (rth->fd < 0) {
@@ -611,7 +611,7 @@ LinkCatcher(struct nlmsghdr *nlh)
  * This routine handles those events (i.e., call this when rth.fd
  * is ready to read).
  */
-static inline void
+static void
 handle_netlink_events(struct rtnl_handle *	rth)
 {
   while(1)

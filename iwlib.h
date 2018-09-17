@@ -502,6 +502,11 @@ extern const struct iw_modul_descr	iw_modul_list[];
 /*
  * Wrapper to push some Wireless Parameter in the driver
  */
+int iw_set_ext(int			skfd,		/* Socket to the kernel */
+	   const char *		ifname,		/* Device name */
+	   int			request,	/* WE ID */
+	   struct iwreq *	pwrq);		/* Fixed part of the request */
+#if 0
 static inline int
 iw_set_ext(int			skfd,		/* Socket to the kernel */
 	   const char *		ifname,		/* Device name */
@@ -513,11 +518,16 @@ iw_set_ext(int			skfd,		/* Socket to the kernel */
   /* Do the request */
   return(ioctl(skfd, request, pwrq));
 }
-
+#endif
 /*------------------------------------------------------------------*/
 /*
  * Wrapper to extract some Wireless Parameter out of the driver
  */
+int iw_get_ext(int			skfd,		/* Socket to the kernel */
+	   const char *		ifname,		/* Device name */
+	   int			request,	/* WE ID */
+	   struct iwreq *	pwrq);		/* Fixed part of the request */
+#if 0
 static inline int
 iw_get_ext(int			skfd,		/* Socket to the kernel */
 	   const char *		ifname,		/* Device name */
@@ -529,7 +539,7 @@ iw_get_ext(int			skfd,		/* Socket to the kernel */
   /* Do the request */
   return(ioctl(skfd, request, pwrq));
 }
-
+#endif
 /*------------------------------------------------------------------*/
 /*
  * Close the socket used for ioctl.

@@ -228,6 +228,7 @@ display_info(struct wireless_info *	info,
        * frequency, because other tools depend on it. */
       if(info->has_range && (freq < KILO))
 	channel = iw_channel_to_freq((int) freq, &freq, &info->range);
+      printf("chan2freq:%d\n", channel);
       /* Display */
       iw_print_freq(buffer, sizeof(buffer), freq, -1, info->b.freq_flags);
       printf("%s  ", buffer);

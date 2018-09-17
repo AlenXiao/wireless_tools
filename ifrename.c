@@ -48,6 +48,7 @@
 #include <getopt.h>		/* getopt_long() */
 #include <linux/sockios.h>	/* SIOCSIFNAME */
 #include <fnmatch.h>		/* fnmatch() */
+#include <unistd.h>
 //#include <sys/syslog.h>
 
 #include "iwlib.h"		/* Wireless Tools library */
@@ -1296,12 +1297,14 @@ mapping_getiwproto(int			skfd,
 		   int			flag)
 {
   struct iwreq		wrq;
+  int ret = -1;
 
   /* Avoid "Unused parameter" warning */
   flag = flag;
+  ret = iw_get_ext(skfd, ifname, SIOCGIWNAME, &wrq);
 
   /* Get wireless name */
-  if(iw_get_ext(skfd, ifname, SIOCGIWNAME, &wrq) < 0)
+  if(ret < 0)
     /* Don't complain about it, Ethernet cards will never support this */
     return(-1);
 
@@ -1783,7 +1786,7 @@ mapping_getsysfs(int			skfd,
 			/* Using getcwd with NULL is a GNU extension. Nice. */
 			linkpath = getcwd(NULL, 0);
 		      /* This may fail, but it's not fatal */
-		      fchdir(cwd_fd);
+		      ret = fchdir(cwd_fd);
 		    }
 		  /* Check if we suceeded */
 		  if(!linkpath)
@@ -2610,9 +2613,7 @@ usage(void)
 /*
  * The main !
  */
-int
-main(int	argc,
-     char *	argv[]) 
+int main(int argc, char *argv[]) 
 {
   const char *	conf_file = DEFAULT_CONF;
   char *	ifname = NULL;
@@ -2633,6 +2634,8 @@ main(int	argc,
 	default:
 	case '?':
 	  usage(); 
+	  conf_file = optarg;
+      break;
 	case 'c':
 	  conf_file = optarg;
 	  break;

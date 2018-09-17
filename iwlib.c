@@ -249,8 +249,11 @@ iw_enum_devices(int		skfd,
       /* Success : use data from /proc/net/wireless */
 
       /* Eat 2 lines of header */
-      fgets(buff, sizeof(buff), fh);
-      fgets(buff, sizeof(buff), fh);
+      char *ret;
+      ret = fgets(buff, sizeof(buff), fh);
+      ret = fgets(buff, sizeof(buff), fh);
+      if (ret != NULL)
+          ret = NULL;
 
       /* Read each device line */
       while(fgets(buff, sizeof(buff), fh))
@@ -332,7 +335,7 @@ iw_get_kernel_we_version(void)
     }
 
   /* Read the first line of buffer */
-  fgets(buff, sizeof(buff), fh);
+  p = fgets(buff, sizeof(buff), fh);
 
   if(strstr(buff, "| WE") == NULL)
     {
@@ -348,7 +351,7 @@ iw_get_kernel_we_version(void)
     }
 
   /* Read the second line of buffer */
-  fgets(buff, sizeof(buff), fh);
+  p = fgets(buff, sizeof(buff), fh);
 
   /* Get to the last separator, to get the version */
   p = strrchr(buff, '|');
@@ -376,13 +379,14 @@ print_iface_version_info(int	skfd,
   struct iwreq		wrq;
   char			buffer[sizeof(iwrange) * 2];	/* Large enough */
   struct iw_range *	range;
+  int ret = iw_get_ext(skfd, ifname, SIOCGIWNAME, &wrq);
 
   /* Avoid "Unused parameter" warning */
   args = args; count = count;
 
   /* If no wireless name : no wireless extensions.
    * This enable us to treat the SIOCGIWRANGE failure below properly. */
-  if(iw_get_ext(skfd, ifname, SIOCGIWNAME, &wrq) < 0)
+  if(ret < 0)
     return(-1);
 
   /* Cleanup */
@@ -391,7 +395,8 @@ print_iface_version_info(int	skfd,
   wrq.u.data.pointer = (caddr_t) buffer;
   wrq.u.data.length = sizeof(buffer);
   wrq.u.data.flags = 0;
-  if(iw_get_ext(skfd, ifname, SIOCGIWRANGE, &wrq) < 0)
+  ret = iw_get_ext(skfd, ifname, SIOCGIWRANGE, &wrq);
+  if(ret < 0)
     {
       /* Interface support WE (see above), but not IWRANGE */
       fprintf(stderr, "%-8.16s  Driver has no Wireless Extension version information.\n\n", ifname);
@@ -584,6 +589,28 @@ int iw_get_range_info(int skfd,
   iw_ignore_version = 1;
 
   return(0);
+}
+
+int iw_get_ext(int			skfd,		/* Socket to the kernel */
+	   const char *		ifname,		/* Device name */
+	   int			request,	/* WE ID */
+	   struct iwreq *	pwrq)		/* Fixed part of the request */
+{
+  /* Set device name */
+  strncpy(pwrq->ifr_name, ifname, IFNAMSIZ);
+  /* Do the request */
+  return(ioctl(skfd, request, pwrq));
+}
+
+int iw_set_ext(int			skfd,		/* Socket to the kernel */
+	   const char *		ifname,		/* Device name */
+	   int			request,	/* WE ID */
+	   struct iwreq *	pwrq)		/* Fixed part of the request */
+{
+  /* Set device name */
+  strncpy(pwrq->ifr_name, ifname, IFNAMSIZ);
+  /* Do the request */
+  return(ioctl(skfd, request, pwrq));
 }
 
 /*------------------------------------------------------------------*/

@@ -149,11 +149,10 @@ int	iw_ignore_version = 0;
  * Depending on the protocol present, open the right socket. The socket
  * will allow us to talk to the driver.
  */
-int
-iw_sockets_open(void)
+int iw_sockets_open(void)
 {
   static const int families[] = {
-    AF_INET, AF_IPX, AF_AX25, AF_APPLETALK
+      AF_INET, AF_IPX, AF_AX25, AF_APPLETALK
   };
   unsigned int	i;
   int		sock;
@@ -168,12 +167,11 @@ iw_sockets_open(void)
    */
 
   /* Try all families we support */
-  for(i = 0; i < sizeof(families)/sizeof(int); ++i)
-    {
+  for (i = 0; i < sizeof(families) / sizeof(int); ++ i) {
       /* Try to open the socket, if success returns it */
       sock = socket(families[i], SOCK_DGRAM, 0);
-      if(sock >= 0)
-	return sock;
+      if (sock >= 0)
+          return sock;
   }
 
   return -1;
@@ -472,6 +470,7 @@ int iw_get_range_info(int skfd,
   struct iwreq		wrq;
   char			buffer[sizeof(iwrange) * 2];	/* Large enough */
   union iw_range_raw *	range_raw;
+  int ret = -1;
 
   /* Cleanup */
   bzero(buffer, sizeof(buffer));
@@ -479,7 +478,10 @@ int iw_get_range_info(int skfd,
   wrq.u.data.pointer = (caddr_t) buffer;
   wrq.u.data.length = sizeof(buffer);
   wrq.u.data.flags = 0;
-  if (iw_get_ext(skfd, ifname, SIOCGIWRANGE, &wrq) < 0) {
+
+  ret = iw_get_ext(skfd, ifname, SIOCGIWRANGE, &wrq);
+  printf("ioctl ret:%d\n", ret);
+  if (ret < 0) {
       printf("SIOCFIWARANGE fail\r\n");
       return(-1);
   }

@@ -660,11 +660,18 @@ static int print_scanning_info(
     }
 #else
     if (scanflags == 0) {
+        int ch = 0, idx = 0;
         scanflags |= IW_SCAN_ALL_FREQ;
         scanopt.scan_type = IW_SCAN_TYPE_PASSIVE;
+        //scanopt.scan_type = IW_SCAN_TYPE_ACTIVE;
         scanopt.num_channels = range.num_channels;
+        for (ch = 0; ch < range.num_channels; ch ++) {
+            if (range.freq[ch].i <= 14)
+                memcpy(&scanopt.channel_list[idx ++], &range.freq[ch], sizeof(range.freq[0]));
+        }
+        scanopt.num_channels = idx;
         printf("scanopt.num_channels:%d\n", scanopt.num_channels);
-        memcpy(scanopt.channel_list, range.freq, sizeof(range.freq[0]) * range.num_channels); 
+        //memcpy(scanopt.channel_list, range.freq, sizeof(range.freq[0]) * range.num_channels); 
     }
     wrq.u.data.pointer = (caddr_t) &scanopt;
     wrq.u.data.length = sizeof(scanopt);
